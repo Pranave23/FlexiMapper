@@ -198,8 +198,8 @@ async def get_columns(req: ColumnRequest):
         raise HTTPException(status_code=404, detail="Uploaded file not found or session expired.")
 
     try:
-        # Load with read_only to quickly fetch headers (row 1)
-        wb = load_workbook(file_path, read_only=True)
+        # Load normally to fetch headers robustly (bypassing read_only dimension bugs)
+        wb = load_workbook(file_path, data_only=True)
         if req.sheet_name not in wb.sheetnames:
             wb.close()
             raise HTTPException(status_code=400, detail=f"Sheet '{req.sheet_name}' not found in workbook.")

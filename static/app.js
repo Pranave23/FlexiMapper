@@ -171,18 +171,16 @@ function setupEventListeners() {
         await fetchColumns('target');
     });
 
-    inputHeaderSource.addEventListener('change', async (e) => {
+    inputHeaderSource.addEventListener('input', async (e) => {
         let val = parseInt(e.target.value) || 1;
         if (val < 1) val = 1;
-        e.target.value = val;
         state.source.headerRow = val;
         await fetchColumns('source');
     });
 
-    inputHeaderTarget.addEventListener('change', async (e) => {
+    inputHeaderTarget.addEventListener('input', async (e) => {
         let val = parseInt(e.target.value) || 1;
         if (val < 1) val = 1;
-        e.target.value = val;
         state.target.headerRow = val;
         await fetchColumns('target');
     });
