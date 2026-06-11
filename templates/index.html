@@ -133,15 +133,23 @@
                     </button>
                 </div>
 
-                <!-- Sheet Select dropdown -->
-                <div id="container-sheets-source" class="hidden space-y-2 animate-fadeIn">
-                    <label for="select-sheet-source" class="block text-xs font-semibold text-gray-400">Select Sheet / Tab:</label>
-                    <div class="relative">
-                        <select id="select-sheet-source" class="w-full bg-gray-950/80 border border-gray-800 text-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-500 appearance-none">
-                            <!-- Populated dynamically -->
-                        </select>
-                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
-                            <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                <!-- Sheet Select dropdown & Header Row input -->
+                <div id="container-sheets-source" class="hidden space-y-3 animate-fadeIn">
+                    <div class="grid grid-cols-3 gap-3">
+                        <div class="col-span-2 space-y-2">
+                            <label for="select-sheet-source" class="block text-xs font-semibold text-gray-400">Select Sheet / Tab:</label>
+                            <div class="relative">
+                                <select id="select-sheet-source" class="w-full bg-gray-950/80 border border-gray-800 text-gray-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-brand-500 appearance-none">
+                                    <!-- Populated dynamically -->
+                                </select>
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
+                                    <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <label for="input-header-source" class="block text-xs font-semibold text-gray-400">Header Row:</label>
+                            <input type="number" id="input-header-source" min="1" value="1" class="w-full bg-gray-950/80 border border-gray-800 text-gray-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-brand-500 text-center font-bold">
                         </div>
                     </div>
                 </div>
@@ -187,15 +195,23 @@
                     </button>
                 </div>
 
-                <!-- Sheet Select dropdown -->
-                <div id="container-sheets-target" class="hidden space-y-2 animate-fadeIn">
-                    <label for="select-sheet-target" class="block text-xs font-semibold text-gray-400">Select Sheet / Tab:</label>
-                    <div class="relative">
-                        <select id="select-sheet-target" class="w-full bg-gray-950/80 border border-gray-800 text-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 appearance-none">
-                            <!-- Populated dynamically -->
-                        </select>
-                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
-                            <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                <!-- Sheet Select dropdown & Header Row input -->
+                <div id="container-sheets-target" class="hidden space-y-3 animate-fadeIn">
+                    <div class="grid grid-cols-3 gap-3">
+                        <div class="col-span-2 space-y-2">
+                            <label for="select-sheet-target" class="block text-xs font-semibold text-gray-400">Select Sheet / Tab:</label>
+                            <div class="relative">
+                                <select id="select-sheet-target" class="w-full bg-gray-950/80 border border-gray-800 text-gray-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-indigo-500 appearance-none">
+                                    <!-- Populated dynamically -->
+                                </select>
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
+                                    <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <label for="input-header-target" class="block text-xs font-semibold text-gray-400">Header Row:</label>
+                            <input type="number" id="input-header-target" min="1" value="1" class="w-full bg-gray-950/80 border border-gray-800 text-gray-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-indigo-500 text-center font-bold">
                         </div>
                     </div>
                 </div>

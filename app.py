@@ -117,6 +117,7 @@ def clean_and_convert(val, target_cell):
 class ColumnRequest(BaseModel):
     file_id: str
     sheet_name: str
+    header_row: int = 1
 
 class MergeRequest(BaseModel):
     source_id: str
@@ -125,6 +126,8 @@ class MergeRequest(BaseModel):
     target_sheet: str
     mappings: Dict[str, str]  # target_col -> source_col
     merge_mode: str  # "fill" or "append"
+    source_header_row: int = 1
+    target_header_row: int = 1
 
 # Route to serve the frontend single page app
 @app.get("/", response_class=HTMLResponse)
@@ -203,19 +206,19 @@ async def get_columns(req: ColumnRequest):
         
         sheet = wb[req.sheet_name]
         
-        # Fetch the first row values
-        rows_generator = sheet.iter_rows(values_only=True)
+        # Fetch the specified header row values
+        rows_generator = sheet.iter_rows(min_row=req.header_row, max_row=req.header_row, values_only=True)
         try:
-            first_row = next(rows_generator)
+            header_row_vals = next(rows_generator)
         except StopIteration:
-            first_row = []
+            header_row_vals = []
         
         wb.close()
 
         # Build clean column headers
         columns = []
-        if first_row:
-            for idx, cell_val in enumerate(first_row):
+        if header_row_vals:
+            for idx, cell_val in enumerate(header_row_vals):
                 if cell_val is not None:
                     columns.append(str(cell_val).strip())
                 else:
@@ -248,9 +251,9 @@ async def merge_data(req: MergeRequest, background_tasks: BackgroundTasks):
         sheet_source = wb_source[req.source_sheet]
         
         # Read source data
-        rows_iter = sheet_source.iter_rows(values_only=True)
+        header_rows_generator = sheet_source.iter_rows(min_row=req.source_header_row, max_row=req.source_header_row, values_only=True)
         try:
-            source_headers = next(rows_iter)
+            source_headers = next(header_rows_generator)
         except StopIteration:
             source_headers = []
         
@@ -261,6 +264,8 @@ async def merge_data(req: MergeRequest, background_tasks: BackgroundTasks):
             else:
                 source_headers_cleaned.append(f"Column {idx + 1}")
         
+        # Read source data rows starting after the header row
+        rows_iter = sheet_source.iter_rows(min_row=req.source_header_row + 1, values_only=True)
         source_data = list(rows_iter)
         wb_source.close()
 
@@ -275,19 +280,19 @@ async def merge_data(req: MergeRequest, background_tasks: BackgroundTasks):
         
         sheet_target = wb_target[req.target_sheet]
 
-        # Extract target headers and columns index
+        # Extract target headers and columns index from specified target_header_row
         target_cols = {}
         for col in range(1, sheet_target.max_column + 1):
-            val = sheet_target.cell(row=1, column=col).value
+            val = sheet_target.cell(row=req.target_header_row, column=col).value
             val_str = str(val).strip() if val is not None else f"Column {col}"
             target_cols[val_str] = col
 
         # Calculate template row parameters
         original_max_row = sheet_target.max_row
         
-        # Find the actual last data row (by looking for any non-empty cell in row 2+)
-        last_data_row = 1
-        for r in range(2, original_max_row + 1):
+        # Find the actual last data row (by looking for any non-empty cell starting from target_header_row + 1)
+        last_data_row = req.target_header_row
+        for r in range(req.target_header_row + 1, original_max_row + 1):
             has_value = False
             for c in range(1, sheet_target.max_column + 1):
                 if sheet_target.cell(row=r, column=c).value is not None:
@@ -300,10 +305,10 @@ async def merge_data(req: MergeRequest, background_tasks: BackgroundTasks):
         if req.merge_mode == "append":
             start_row = last_data_row + 1
         else: # "fill"
-            start_row = 2
+            start_row = req.target_header_row + 1
 
-        # Style source map for extension copying (reference row 2 if exists, otherwise row 1)
-        style_ref_row = 2 if original_max_row >= 2 else 1
+        # Style source map for extension copying (reference row target_header_row + 1 if exists, otherwise target_header_row)
+        style_ref_row = req.target_header_row + 1 if original_max_row >= req.target_header_row + 1 else req.target_header_row
         col_styles = {}
         for col_idx in target_cols.values():
             col_styles[col_idx] = sheet_target.cell(row=style_ref_row, column=col_idx)

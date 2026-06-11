@@ -182,17 +182,21 @@ if source_file and target_file:
         wb_tgt.close()
         target_file.seek(0) # reset stream
         
-        # Display sheet selectors
-        col_sh1, col_sh2 = st.columns(2)
+        # Display sheet selectors & header row inputs
+        col_sh1, col_sh2, col_sh3, col_sh4 = st.columns([3, 1, 3, 1])
         with col_sh1:
             src_sheet_selected = st.selectbox("Select Source Sheet Tab:", src_sheets)
         with col_sh2:
+            source_header_row = st.number_input("Header Row (Src):", min_value=1, value=1, key="src_header_row")
+        with col_sh3:
             tgt_sheet_selected = st.selectbox("Select Target Sheet Tab:", tgt_sheets)
+        with col_sh4:
+            target_header_row = st.number_input("Header Row (Tgt):", min_value=1, value=1, key="tgt_header_row")
 
-        # Read column headers
+        # Read column headers from user-specified rows
         wb_src = load_workbook(source_file, read_only=True)
         ws_src = wb_src[src_sheet_selected]
-        src_row_gen = ws_src.iter_rows(values_only=True)
+        src_row_gen = ws_src.iter_rows(min_row=int(source_header_row), max_row=int(source_header_row), values_only=True)
         try:
             src_first_row = next(src_row_gen)
         except StopIteration:
@@ -202,7 +206,7 @@ if source_file and target_file:
 
         wb_tgt = load_workbook(target_file, read_only=True)
         ws_tgt = wb_tgt[tgt_sheet_selected]
-        tgt_row_gen = ws_tgt.iter_rows(values_only=True)
+        tgt_row_gen = ws_tgt.iter_rows(min_row=int(target_header_row), max_row=int(target_header_row), values_only=True)
         try:
             tgt_first_row = next(tgt_row_gen)
         except StopIteration:
@@ -228,8 +232,12 @@ if source_file and target_file:
         # Smart Match Button
         if st.button("Smart Match Columns"):
             st.session_state.smart_matched = True
-            st.session_state.mappings = {}
             for src_col in source_columns:
+                # Skip if already mapped (to anything other than Skip)
+                current_val = st.session_state.mappings.get(src_col, "— Skip —")
+                if current_val != "— Skip —":
+                    continue
+
                 best_match = ""
                 highest_score = 0.0
                 for tgt_col in target_columns:
@@ -242,34 +250,63 @@ if source_file and target_file:
                 else:
                     st.session_state.mappings[src_col] = "— Skip —"
         
-        if 'mappings' not in st.session_state:
+        # Initialize or reset mappings based on active sheets & header rows
+        current_sheet_key = f"{src_sheet_selected}_{source_header_row}_{tgt_sheet_selected}_{target_header_row}"
+        if 'last_sheet_key' not in st.session_state or st.session_state.last_sheet_key != current_sheet_key:
+            st.session_state.last_sheet_key = current_sheet_key
             st.session_state.mappings = {}
+            # Initialize exact case-insensitive matches
+            for src_col in source_columns:
+                src_clean = src_col.strip().lower()
+                for tgt_col in target_columns:
+                    if tgt_col.strip().lower() == src_clean:
+                        st.session_state.mappings[src_col] = tgt_col
+                        break
 
         # Render mapping grid (Source LHS, Target RHS)
         mappings = {}
         for src_col in source_columns:
+            options_list = ["— Skip —"] + target_columns
+            default_val = st.session_state.mappings.get(src_col, "— Skip —")
+            default_idx = options_list.index(default_val) if default_val in options_list else 0
+            
+            # Determine visual status from session state (if changed by user)
+            select_key = f"select_{src_col}"
+            selected_target = st.session_state.get(select_key, default_val)
+            
+            is_exact = False
+            is_mapped = False
+            if selected_target != "— Skip —":
+                if selected_target.strip().lower() == src_col.strip().lower():
+                    is_exact = True
+                else:
+                    is_mapped = True
+
             col_lhs, col_arrow, col_rhs = st.columns([2, 1, 3])
             with col_lhs:
                 st.write("") # spacing
                 st.write(f"**{src_col}**")
             with col_arrow:
                 st.write("")
-                st.write("➡️")
+                if is_exact:
+                    st.markdown("<span style='color: #10b981; font-weight: bold;'>✅ Auto</span>", unsafe_allow_html=True)
+                elif is_mapped:
+                    st.markdown("<span style='color: #6366f1; font-weight: bold;'>🔗 Mapped</span>", unsafe_allow_html=True)
+                else:
+                    st.write("➡️")
             with col_rhs:
-                # Find default index based on session state mappings
-                default_val = st.session_state.mappings.get(src_col, "— Skip —")
-                options_list = ["— Skip —"] + target_columns
-                default_idx = options_list.index(default_val) if default_val in options_list else 0
-                
-                selected_target = st.selectbox(
+                selected_val = st.selectbox(
                     f"Select Target Column for {src_col}",
                     options_list,
                     index=default_idx,
-                    key=f"select_{src_col}",
+                    key=select_key,
                     label_visibility="collapsed"
                 )
-                if selected_target != "— Skip —":
-                    mappings[src_col] = selected_target
+                if selected_val != "— Skip —":
+                    mappings[src_col] = selected_val
+                    st.session_state.mappings[src_col] = selected_val
+                else:
+                    st.session_state.mappings[src_col] = "— Skip —"
 
         # STEP 3: Options & Execution
         st.markdown("<h3 class='section-header'>3. Merge Options</h3>", unsafe_allow_html=True)
@@ -289,12 +326,11 @@ if source_file and target_file:
             else:
                 with st.spinner("Processing spreadsheets..."):
                     try:
-                        # 1. Load source rows
+                        # 1. Load source rows starting after the specified source header row
                         wb_source = load_workbook(source_file, data_only=True)
                         ws_source = wb_source[src_sheet_selected]
                         
-                        src_rows_iter = ws_source.iter_rows(values_only=True)
-                        next(src_rows_iter) # skip headers
+                        src_rows_iter = ws_source.iter_rows(min_row=int(source_header_row) + 1, values_only=True)
                         source_data = list(src_rows_iter)
                         wb_source.close()
                         source_file.seek(0)
@@ -307,15 +343,15 @@ if source_file and target_file:
 
                         target_cols_idx = {}
                         for col in range(1, ws_target.max_column + 1):
-                            val = ws_target.cell(row=1, column=col).value
+                            val = ws_target.cell(row=int(target_header_row), column=col).value
                             val_str = str(val).strip() if val is not None else f"Column {col}"
                             target_cols_idx[val_str] = col
 
                         original_max_row = ws_target.max_row
 
-                        # Calculate active last data row in Target
-                        last_data_row = 1
-                        for r in range(2, original_max_row + 1):
+                        # Calculate active last data row in Target starting from target_header_row + 1
+                        last_data_row = int(target_header_row)
+                        for r in range(int(target_header_row) + 1, original_max_row + 1):
                             has_val = False
                             for c in range(1, ws_target.max_column + 1):
                                 if ws_target.cell(row=r, column=c).value is not None:
@@ -325,10 +361,10 @@ if source_file and target_file:
                                 last_data_row = r
 
                         # Starting row index
-                        start_row = last_data_row + 1 if strategy == "append" else 2
+                        start_row = last_data_row + 1 if strategy == "append" else int(target_header_row) + 1
 
-                        # Store styling references from row 2 (or row 1 if single row template)
-                        style_ref_row = 2 if original_max_row >= 2 else 1
+                        # Store styling references from target_header_row + 1 (or target_header_row)
+                        style_ref_row = int(target_header_row) + 1 if original_max_row >= int(target_header_row) + 1 else int(target_header_row)
                         col_styles = {col_idx: ws_target.cell(row=style_ref_row, column=col_idx) for col_idx in target_cols_idx.values()}
 
                         # 3. Paste data row by row

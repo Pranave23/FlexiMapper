@@ -7,6 +7,7 @@ let state = {
         fileId: null,
         sheets: [],
         selectedSheet: '',
+        headerRow: 1,
         columns: []
     },
     target: {
@@ -14,6 +15,7 @@ let state = {
         fileId: null,
         sheets: [],
         selectedSheet: '',
+        headerRow: 1,
         columns: []
     },
     mergeMode: 'fill' // 'fill' or 'append'
@@ -39,6 +41,8 @@ const containerSheetsSource = document.getElementById('container-sheets-source')
 const containerSheetsTarget = document.getElementById('container-sheets-target');
 const selectSheetSource = document.getElementById('select-sheet-source');
 const selectSheetTarget = document.getElementById('select-sheet-target');
+const inputHeaderSource = document.getElementById('input-header-source');
+const inputHeaderTarget = document.getElementById('input-header-target');
 
 const parsingLoader = document.getElementById('parsing-loader');
 const sectionMapping = document.getElementById('section-mapping');
@@ -167,6 +171,22 @@ function setupEventListeners() {
         await fetchColumns('target');
     });
 
+    inputHeaderSource.addEventListener('change', async (e) => {
+        let val = parseInt(e.target.value) || 1;
+        if (val < 1) val = 1;
+        e.target.value = val;
+        state.source.headerRow = val;
+        await fetchColumns('source');
+    });
+
+    inputHeaderTarget.addEventListener('change', async (e) => {
+        let val = parseInt(e.target.value) || 1;
+        if (val < 1) val = 1;
+        e.target.value = val;
+        state.target.headerRow = val;
+        await fetchColumns('target');
+    });
+
     btnSmartMatch.addEventListener('click', runSmartMatch);
 
     btnProcess.addEventListener('click', processAndMerge);
@@ -179,14 +199,19 @@ function resetFileType(type) {
     state[type].fileId = null;
     state[type].sheets = [];
     state[type].selectedSheet = '';
+    state[type].headerRow = 1;
     state[type].columns = [];
 
     const dropzone = type === 'source' ? dropzoneSource : dropzoneTarget;
     const infoContainer = type === 'source' ? infoSource : infoTarget;
     const selectContainer = type === 'source' ? containerSheetsSource : containerSheetsTarget;
     const input = type === 'source' ? fileSourceInput : fileTargetInput;
+    const headerInput = type === 'source' ? inputHeaderSource : inputHeaderTarget;
 
     input.value = '';
+    if (headerInput) {
+        headerInput.value = 1;
+    }
     dropzone.classList.remove('hidden');
     infoContainer.classList.add('hidden');
     selectContainer.classList.add('hidden');
@@ -272,7 +297,11 @@ async function fetchColumns(type) {
         const response = await fetch('/columns', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ file_id: fileId, sheet_name: sheetName })
+            body: JSON.stringify({ 
+                file_id: fileId, 
+                sheet_name: sheetName,
+                header_row: state[type].headerRow
+            })
         });
 
         if (!response.ok) {
@@ -293,6 +322,38 @@ async function fetchColumns(type) {
     }
 }
 
+// Update status badge and row background styling for a mapping row dynamically
+function updateRowStatus(selectEl) {
+    const tr = selectEl.closest('tr');
+    if (!tr) return;
+    const statusCell = tr.querySelector('.status-cell');
+    if (!statusCell) return;
+
+    const sourceCol = selectEl.dataset.sourceColumn;
+    const targetCol = selectEl.value;
+
+    // Reset background styles
+    tr.classList.remove('bg-emerald-500/5', 'bg-brand-500/5');
+
+    if (!targetCol) {
+        statusCell.innerHTML = '<i data-lucide="arrow-right" class="w-4 h-4 mx-auto text-gray-600"></i>';
+    } else if (targetCol.trim().toLowerCase() === sourceCol.trim().toLowerCase()) {
+        statusCell.innerHTML = `
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
+                <i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Auto-Matched
+            </span>
+        `;
+        tr.classList.add('bg-emerald-500/5');
+    } else {
+        statusCell.innerHTML = `
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-semibold">
+                <i data-lucide="link" class="w-3.5 h-3.5"></i> Mapped
+            </span>
+        `;
+        tr.classList.add('bg-brand-500/5');
+    }
+}
+
 // Render dynamic mapping table
 function renderMappingTable() {
     mappingTableBody.innerHTML = '';
@@ -310,7 +371,7 @@ function renderMappingTable() {
 
         // Icon indicator cell
         const tdArrow = document.createElement('td');
-        tdArrow.className = 'px-6 py-4 text-center text-gray-500';
+        tdArrow.className = 'px-6 py-4 text-center text-gray-500 status-cell';
         tdArrow.innerHTML = '<i data-lucide="arrow-right" class="w-4 h-4 mx-auto"></i>';
 
         // Target Dropdown Selector cell (RHS)
@@ -330,11 +391,24 @@ function renderMappingTable() {
         defOpt.textContent = '— Skip / Don\'t Map —';
         select.appendChild(defOpt);
 
+        // Check for exact matching target column case-insensitively
+        let matchedTarget = '';
+        const cleanSource = sourceCol.trim().toLowerCase();
+        for (let tCol of targetCols) {
+            if (tCol.trim().toLowerCase() === cleanSource) {
+                matchedTarget = tCol;
+                break;
+            }
+        }
+
         // Add target options
         targetCols.forEach(targetCol => {
             const opt = document.createElement('option');
             opt.value = targetCol;
             opt.textContent = targetCol;
+            if (targetCol === matchedTarget) {
+                opt.selected = true;
+            }
             select.appendChild(opt);
         });
 
@@ -350,6 +424,15 @@ function renderMappingTable() {
         tr.appendChild(tdArrow);
         tr.appendChild(tdSelect);
         mappingTableBody.appendChild(tr);
+
+        // Update row status visual representation immediately
+        updateRowStatus(select);
+
+        // Dynamic change listener
+        select.addEventListener('change', () => {
+            updateRowStatus(select);
+            lucide.createIcons();
+        });
     });
 
     // Reinitialize icons in new elements
@@ -444,6 +527,11 @@ function runSmartMatch() {
     let matchCount = 0;
 
     selects.forEach(select => {
+        // Skip columns that are already mapped (either auto-mapped on load or manually mapped)
+        if (select.value !== '') {
+            return;
+        }
+
         const sourceCol = select.dataset.sourceColumn;
         let bestMatch = '';
         let highestScore = 0;
@@ -471,10 +559,12 @@ function runSmartMatch() {
         if (highestScore >= 0.6) {
             select.value = bestMatch;
             matchCount++;
-        } else {
-            select.value = ''; // Reset to Skip if no strong match
+            updateRowStatus(select);
         }
     });
+
+    // Reinitialize icons in newly updated elements
+    lucide.createIcons();
 
     if (matchCount > 0) {
         // Simple micro feedback toast
@@ -487,7 +577,7 @@ function runSmartMatch() {
             feedback.remove();
         }, 3000);
     } else {
-        alert('No highly similar columns found between the sheets. Please select mappings manually.');
+        alert('No new highly similar columns found between the sheets. Please select mappings manually.');
     }
 }
 
@@ -522,7 +612,9 @@ async function processAndMerge() {
         source_sheet: state.source.selectedSheet,
         target_sheet: state.target.selectedSheet,
         mappings: mappings,
-        merge_mode: state.mergeMode
+        merge_mode: state.mergeMode,
+        source_header_row: state.source.headerRow,
+        target_header_row: state.target.headerRow
     };
 
     try {
