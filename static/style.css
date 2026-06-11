@@ -1,0 +1,143 @@
+/* FlexiMapper - Stylesheet */
+
+/* Premium Glow Backgrounds */
+.glow-bg {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(120px);
+    opacity: 0.15;
+    z-index: 0;
+    pointer-events: none;
+    transition: all 0.8s ease-in-out;
+}
+
+.glow-blob-1 {
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.6) 0%, rgba(79, 70, 229, 0.2) 70%);
+    top: -200px;
+    left: -200px;
+    animation: float1 25s infinite alternate;
+}
+
+.glow-blob-2 {
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(167, 139, 250, 0.5) 0%, rgba(124, 58, 237, 0.1) 70%);
+    bottom: -100px;
+    right: -100px;
+    animation: float2 20s infinite alternate;
+}
+
+/* Glassmorphism Cards */
+.glass-card {
+    background: rgba(17, 24, 39, 0.65);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 24px;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+/* Dropzone Hover & Dragging Animations */
+.dropzone.dragover {
+    border-color: #6366f1 !important;
+    background: rgba(99, 102, 241, 0.08) !important;
+    box-shadow: 0 0 25px rgba(99, 102, 241, 0.15) inset, 0 4px 20px rgba(99, 102, 241, 0.1) !important;
+    transform: scale(1.01);
+}
+
+.dropzone.dragover .icon-container {
+    color: #6366f1 !important;
+    animation: pulseIcon 1.5s infinite;
+}
+
+#dropzone-target.dropzone.dragover {
+    border-color: #818cf8 !important;
+    background: rgba(129, 140, 248, 0.08) !important;
+    box-shadow: 0 0 25px rgba(129, 140, 248, 0.15) inset, 0 4px 20px rgba(129, 140, 248, 0.1) !important;
+}
+
+#dropzone-target.dropzone.dragover .icon-container {
+    color: #818cf8 !important;
+}
+
+/* Keyframe Animations */
+@keyframes float1 {
+    0% { transform: translate(0, 0) scale(1); }
+    100% { transform: translate(100px, 80px) scale(1.1); }
+}
+
+@keyframes float2 {
+    0% { transform: translate(0, 0) scale(1); }
+    100% { transform: translate(-80px, -100px) scale(1.15); }
+}
+
+@keyframes pulseIcon {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0.7; }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleUp {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.animate-fadeIn {
+    animation: fadeIn 0.4s ease-out forwards;
+}
+
+.animate-slideUp {
+    animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-scaleUp {
+    animation: scaleUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #0b0f19;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #1f2937;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #374151;
+}
+
+/* Select options styling */
+select {
+    transition: all 0.2s ease;
+}
+
+select:focus {
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
+}
+
+/* Interactive elements */
+tr {
+    transition: background-color 0.2s ease;
+}
+
+tr:hover {
+    background-color: rgba(255, 255, 255, 0.015);
+}

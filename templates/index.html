@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlexiMapper — Intelligent Excel Column Mapping</title>
+    <!-- Google Fonts: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#312e81',
+                        },
+                        dark: {
+                            950: '#0b0f19',
+                            900: '#111827',
+                            800: '#1f2937',
+                            700: '#374151',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Custom Style Sheet link -->
+    <link rel="stylesheet" href="/static/style.css">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-dark-950 text-gray-100 min-h-screen flex flex-col font-sans selection:bg-brand-500 selection:text-white overflow-x-hidden">
+
+    <!-- Glowing Background blobs for premium effect -->
+    <div class="glow-bg glow-blob-1"></div>
+    <div class="glow-bg glow-blob-2"></div>
+
+    <!-- Header Navigation -->
+    <header class="border-b border-gray-800/60 bg-dark-950/70 backdrop-blur-md sticky top-0 z-50 transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-gradient-to-tr from-brand-600 to-indigo-400 p-2.5 rounded-xl shadow-lg shadow-brand-500/20">
+                    <i data-lucide="merge" class="w-6 h-6 text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-gray-100 to-gray-400">FlexiMapper</h1>
+                    <p class="text-[10px] text-gray-400 font-medium tracking-widest uppercase">Excel Schema Mapping Engine</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <a href="https://github.com" target="_blank" class="text-gray-400 hover:text-white transition-colors duration-200">
+                    <i data-lucide="github" class="w-5 h-5"></i>
+                </a>
+                <span class="h-5 w-[1px] bg-gray-800"></span>
+                <div class="flex items-center space-x-2 bg-gray-900/60 px-3 py-1 rounded-full border border-gray-800/80">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span class="text-xs text-gray-300 font-medium">Local Node Active</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-grow max-w-7xl mx-auto px-6 py-8 w-full z-10 flex flex-col space-y-8">
+        
+        <!-- Welcome banner -->
+        <section class="text-center max-w-3xl mx-auto space-y-4 py-6">
+            <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-brand-500/10 border border-brand-500/20 text-brand-100 text-xs font-semibold uppercase tracking-wider">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5 text-indigo-400"></i>
+                <span>Smart Schema Mapping</span>
+            </div>
+            <h2 class="text-3xl md:text-5xl font-extrabold tracking-tight leading-tight">
+                Merge spreadsheets. <span class="bg-clip-text text-transparent bg-gradient-to-r from-brand-500 via-indigo-400 to-violet-400">Preserve style.</span>
+            </h2>
+            <p class="text-gray-400 text-sm md:text-base max-w-2xl mx-auto">
+                Upload your raw Source data and a Target Excel template. Map columns with fuzzy smart-matching, and output a perfect formatted spreadsheet.
+            </p>
+        </section>
+
+        <!-- STEP 1: File Uploader Grid -->
+        <section id="step-upload" class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            
+            <!-- Source File Dropzone -->
+            <div class="glass-card p-6 flex flex-col space-y-5 relative group overflow-hidden border border-gray-800/50 hover:border-brand-500/30 transition-all duration-300">
+                <div class="flex items-start justify-between">
+                    <div class="space-y-1">
+                        <span class="text-[10px] text-brand-500 font-bold uppercase tracking-widest">Dataset 01</span>
+                        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                            Source Sheet <span class="text-xs font-normal text-gray-400">(Where data comes from)</span>
+                        </h3>
+                    </div>
+                    <div class="bg-brand-500/10 p-2 rounded-lg text-brand-500 group-hover:bg-brand-500/20 transition-all">
+                        <i data-lucide="database" class="w-5 h-5"></i>
+                    </div>
+                </div>
+
+                <div id="dropzone-source" class="dropzone border-2 border-dashed border-gray-800 hover:border-brand-500/50 rounded-2xl flex flex-col items-center justify-center p-8 text-center cursor-pointer transition-all duration-300 min-h-[200px]">
+                    <input type="file" id="file-source-input" class="hidden" accept=".xlsx,.xlsm">
+                    <div class="icon-container mb-4 text-gray-400 group-hover:text-brand-500 transition-colors duration-300">
+                        <i data-lucide="upload-cloud" class="w-12 h-12"></i>
+                    </div>
+                    <p class="text-sm font-semibold text-gray-200">Drag & drop your Excel file here</p>
+                    <p class="text-xs text-gray-400 mt-1">or click to browse system files</p>
+                    <p class="text-[10px] text-gray-500 mt-4 bg-gray-900/80 px-2 py-1 rounded">Supports .xlsx, .xlsm</p>
+                </div>
+
+                <!-- Selected File Display -->
+                <div id="info-source" class="hidden bg-gray-900/60 border border-gray-800 rounded-xl p-4 flex items-center justify-between animate-fadeIn">
+                    <div class="flex items-center space-x-3 overflow-hidden">
+                        <div class="bg-emerald-500/10 text-emerald-500 p-2.5 rounded-lg flex-shrink-0">
+                            <i data-lucide="file-spreadsheets" class="w-5 h-5"></i>
+                        </div>
+                        <div class="overflow-hidden">
+                            <p id="filename-source" class="text-sm font-bold text-gray-200 truncate">file.xlsx</p>
+                            <p id="filesize-source" class="text-xs text-gray-400">12 KB</p>
+                        </div>
+                    </div>
+                    <button id="btn-clear-source" class="text-gray-500 hover:text-red-400 p-1 rounded transition-colors">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <!-- Sheet Select dropdown -->
+                <div id="container-sheets-source" class="hidden space-y-2 animate-fadeIn">
+                    <label for="select-sheet-source" class="block text-xs font-semibold text-gray-400">Select Sheet / Tab:</label>
+                    <div class="relative">
+                        <select id="select-sheet-source" class="w-full bg-gray-950/80 border border-gray-800 text-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-500 appearance-none">
+                            <!-- Populated dynamically -->
+                        </select>
+                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
+                            <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Target File Dropzone -->
+            <div class="glass-card p-6 flex flex-col space-y-5 relative group overflow-hidden border border-gray-800/50 hover:border-indigo-500/30 transition-all duration-300">
+                <div class="flex items-start justify-between">
+                    <div class="space-y-1">
+                        <span class="text-[10px] text-indigo-400 font-bold uppercase tracking-widest">Dataset 02</span>
+                        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                            Target Sheet / Template <span class="text-xs font-normal text-gray-400">(Where data goes)</span>
+                        </h3>
+                    </div>
+                    <div class="bg-indigo-500/10 p-2 rounded-lg text-indigo-400 group-hover:bg-indigo-500/20 transition-all">
+                        <i data-lucide="layout-template" class="w-5 h-5"></i>
+                    </div>
+                </div>
+
+                <div id="dropzone-target" class="dropzone border-2 border-dashed border-gray-800 hover:border-indigo-500/50 rounded-2xl flex flex-col items-center justify-center p-8 text-center cursor-pointer transition-all duration-300 min-h-[200px]">
+                    <input type="file" id="file-target-input" class="hidden" accept=".xlsx,.xlsm">
+                    <div class="icon-container mb-4 text-gray-400 group-hover:text-indigo-400 transition-colors duration-300">
+                        <i data-lucide="upload-cloud" class="w-12 h-12"></i>
+                    </div>
+                    <p class="text-sm font-semibold text-gray-200">Drag & drop your Excel file here</p>
+                    <p class="text-xs text-gray-400 mt-1">or click to browse system files</p>
+                    <p class="text-[10px] text-gray-500 mt-4 bg-gray-900/80 px-2 py-1 rounded">Supports .xlsx, .xlsm</p>
+                </div>
+
+                <!-- Selected File Display -->
+                <div id="info-target" class="hidden bg-gray-900/60 border border-gray-800 rounded-xl p-4 flex items-center justify-between animate-fadeIn">
+                    <div class="flex items-center space-x-3 overflow-hidden">
+                        <div class="bg-indigo-500/10 text-indigo-400 p-2.5 rounded-lg flex-shrink-0">
+                            <i data-lucide="file-spreadsheets" class="w-5 h-5"></i>
+                        </div>
+                        <div class="overflow-hidden">
+                            <p id="filename-target" class="text-sm font-bold text-gray-200 truncate">template.xlsx</p>
+                            <p id="filesize-target" class="text-xs text-gray-400">45 KB</p>
+                        </div>
+                    </div>
+                    <button id="btn-clear-target" class="text-gray-500 hover:text-red-400 p-1 rounded transition-colors">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <!-- Sheet Select dropdown -->
+                <div id="container-sheets-target" class="hidden space-y-2 animate-fadeIn">
+                    <label for="select-sheet-target" class="block text-xs font-semibold text-gray-400">Select Sheet / Tab:</label>
+                    <div class="relative">
+                        <select id="select-sheet-target" class="w-full bg-gray-950/80 border border-gray-800 text-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 appearance-none">
+                            <!-- Populated dynamically -->
+                        </select>
+                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
+                            <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Loading Overlay for Parsing Phase -->
+        <div id="parsing-loader" class="hidden text-center py-8 space-y-3 animate-fadeIn">
+            <div class="inline-block animate-spin text-brand-500">
+                <i data-lucide="loader" class="w-8 h-8"></i>
+            </div>
+            <p class="text-sm text-gray-400">Scanning Excel workbooks and reading column schemas...</p>
+        </div>
+
+        <!-- STEP 2: Visual Mapping Interface -->
+        <section id="section-mapping" class="hidden space-y-6 animate-slideUp">
+            <div class="glass-card p-6 border border-gray-800/80 flex flex-col space-y-6">
+                
+                <!-- Mapping Header / Smart Match Controls -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-800 pb-5">
+                    <div>
+                        <h3 class="text-xl font-extrabold text-white flex items-center gap-2">
+                            <i data-lucide="shuffle" class="w-5 h-5 text-brand-500"></i> Map Source to Target Columns
+                        </h3>
+                        <p class="text-xs text-gray-400 mt-1">Specify which Source columns copy data into each Target column. Unmapped fields will remain untouched.</p>
+                    </div>
+                    <button id="btn-smart-match" class="flex items-center justify-center space-x-2 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg shadow-brand-500/10 hover:shadow-brand-500/20 active:scale-95 transition-all">
+                        <i data-lucide="sparkles" class="w-4 h-4"></i>
+                        <span>Smart Match Columns</span>
+                    </button>
+                </div>
+
+                <!-- Visual Mapping Table -->
+                <div class="overflow-x-auto rounded-xl border border-gray-800/80">
+                    <table class="min-w-full divide-y divide-gray-800/50 bg-gray-950/40">
+                        <thead class="bg-gray-900/40 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                            <tr>
+                                <th scope="col" class="px-6 py-4 text-left">Source Column (Data)</th>
+                                <th scope="col" class="px-6 py-4 text-center">Mapping</th>
+                                <th scope="col" class="px-6 py-4 text-left">Target Column (Template)</th>
+
+                            </tr>
+                        </thead>
+                        <tbody id="mapping-table-body" class="divide-y divide-gray-800/40">
+                            <!-- Populated dynamically via JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Merge Strategy Options & Execution Button -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-4 border-t border-gray-800/50 items-center">
+                    
+                    <!-- Merge Strategy Selection -->
+                    <div class="lg:col-span-2 space-y-2">
+                        <h4 class="text-xs font-bold text-gray-300 uppercase tracking-widest">Merge Strategy</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            
+                            <!-- Mode Overwrite/Fill -->
+                            <label class="relative flex p-4 rounded-xl border border-brand-500 bg-brand-500/5 cursor-pointer select-none focus:outline-none transition-all duration-300 hover:bg-brand-500/10" id="label-mode-fill">
+                                <input type="radio" name="merge_mode" value="fill" checked class="hidden">
+                                <div class="flex items-start space-x-3">
+                                    <div class="pt-0.5">
+                                        <div class="w-4.5 h-4.5 rounded-full border-2 border-brand-500 flex items-center justify-center" id="radio-fill-dot">
+                                            <div class="w-2 h-2 rounded-full bg-brand-500"></div>
+                                        </div>
+                                    </div>
+                                    <div class="space-y-0.5">
+                                        <p class="text-sm font-bold text-white">Fill / Overwrite Columns</p>
+                                        <p class="text-xs text-gray-400">Pipes data starting at Row 2, maintaining template formats.</p>
+                                    </div>
+                                </div>
+                            </label>
+                            
+                            <!-- Mode Append -->
+                            <label class="relative flex p-4 rounded-xl border border-gray-800 bg-gray-900/20 cursor-pointer select-none focus:outline-none transition-all duration-300 hover:bg-gray-900/40" id="label-mode-append">
+                                <input type="radio" name="merge_mode" value="append" class="hidden">
+                                <div class="flex items-start space-x-3">
+                                    <div class="pt-0.5">
+                                        <div class="w-4.5 h-4.5 rounded-full border-2 border-gray-600 flex items-center justify-center" id="radio-append-dot">
+                                            <div class="w-2 h-2 rounded-full bg-transparent"></div>
+                                        </div>
+                                    </div>
+                                    <div class="space-y-0.5">
+                                        <p class="text-sm font-bold text-white">Append to Existing Data</p>
+                                        <p class="text-xs text-gray-400">Inserts data rows after the last current data row of the target.</p>
+                                    </div>
+                                </div>
+                            </label>
+
+                        </div>
+                    </div>
+
+                    <!-- Process Button -->
+                    <div class="w-full flex justify-end">
+                        <button id="btn-process" class="w-full lg:w-auto flex items-center justify-center space-x-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold px-8 py-4 rounded-xl shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/20 active:scale-98 transition-all">
+                            <i data-lucide="play" class="w-5 h-5"></i>
+                            <span>Process and Merge Sheets</span>
+                        </button>
+                    </div>
+
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Loading Overlay for Processing Phase -->
+        <div id="processing-loader" class="hidden bg-gray-950/80 backdrop-blur-md rounded-2xl p-12 text-center space-y-6 max-w-lg mx-auto border border-gray-800/80 animate-fadeIn shadow-2xl">
+            <div class="relative w-16 h-16 mx-auto">
+                <div class="absolute inset-0 rounded-full border-4 border-emerald-500/20"></div>
+                <div class="absolute inset-0 rounded-full border-4 border-t-emerald-500 animate-spin"></div>
+            </div>
+            <div class="space-y-2">
+                <h4 class="text-lg font-bold text-white">Generating output spreadsheet...</h4>
+                <p class="text-sm text-gray-400">Replicating cells, copying values, and cloning style definitions across files. Please stand by.</p>
+            </div>
+        </div>
+
+        <!-- Success and Downloading Screen -->
+        <section id="section-success" class="hidden bg-gradient-to-tr from-brand-900/20 to-indigo-900/10 border border-emerald-500/20 rounded-2xl p-10 text-center space-y-6 max-w-xl mx-auto shadow-2xl animate-scaleUp">
+            <div class="w-16 h-16 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-full flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/5 animate-pulse">
+                <i data-lucide="check-circle" class="w-9 h-9"></i>
+            </div>
+            
+            <div class="space-y-2">
+                <h3 class="text-2xl font-extrabold text-white">Process Complete!</h3>
+                <p class="text-sm text-gray-300">Columns have been successfully aligned and merged.</p>
+                <p class="text-xs text-gray-400">All row dimensions, values, dates, numbers, styles, and font sizes have been verified and saved.</p>
+            </div>
+
+            <div class="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
+                <button id="btn-download" class="w-full sm:w-auto flex items-center justify-center space-x-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold px-8 py-3.5 rounded-xl shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/35 hover:-translate-y-0.5 active:translate-y-0 transition-all">
+                    <i data-lucide="download" class="w-5 h-5 animate-bounce"></i>
+                    <span>Download Merged Excel</span>
+                </button>
+                <button id="btn-reset" class="w-full sm:w-auto flex items-center justify-center space-x-2 bg-gray-900 border border-gray-800 hover:bg-gray-800/80 text-gray-300 font-bold px-6 py-3.5 rounded-xl hover:-translate-y-0.5 active:translate-y-0 transition-all">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                    <span>Map New Files</span>
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Sticky footer -->
+    <footer class="border-t border-gray-900 bg-gray-950/40 py-6 mt-12 text-center text-xs text-gray-500 relative z-10">
+        <p>&copy; 2026 FlexiMapper Studio. Built with FastAPI, openpyxl, & Tailwind.</p>
+    </footer>
+
+    <!-- App Frontend Script -->
+    <script src="/static/app.js"></script>
+</body>
+</html>
