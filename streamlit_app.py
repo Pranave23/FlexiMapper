@@ -4,6 +4,8 @@ from openpyxl import load_workbook
 import io
 import datetime
 from copy import copy
+import re
+
 
 # Custom Page Config
 st.set_page_config(
@@ -120,7 +122,9 @@ def clean_and_convert(val, target_cell):
 
 # String similarity utility for smart match
 def clean_string(s):
-    return str(s).lower().replace(/[^a-z0-9]/g, '') if isinstance(s, str) else str(s).lower()
+    if isinstance(s, str):
+        return re.sub(r'[^a-z0-9]', '', s.lower())
+    return str(s).lower()
 
 def get_similarity_score(s1, s2):
     s1_clean = "".join(c for c in str(s1).lower() if c.isalnum())
