@@ -198,20 +198,25 @@ async def get_columns(req: ColumnRequest):
         raise HTTPException(status_code=404, detail="Uploaded file not found or session expired.")
 
     try:
-        # Load normally to fetch headers robustly (bypassing read_only dimension bugs)
-        wb = load_workbook(file_path, data_only=True)
+        # Load in fast read-only mode
+        wb = load_workbook(file_path, read_only=True)
         if req.sheet_name not in wb.sheetnames:
             wb.close()
             raise HTTPException(status_code=400, detail=f"Sheet '{req.sheet_name}' not found in workbook.")
         
         sheet = wb[req.sheet_name]
         
-        # Fetch the specified header row values
-        rows_generator = sheet.iter_rows(min_row=req.header_row, max_row=req.header_row, values_only=True)
-        try:
-            header_row_vals = next(rows_generator)
-        except StopIteration:
-            header_row_vals = []
+        # Override dimensions to bypass read-only metadata limits
+        sheet._max_row = None
+        sheet._max_column = None
+        
+        # Fetch the specified header row values sequentially (supports custom row positioning fast)
+        rows_generator = sheet.iter_rows(values_only=True)
+        header_row_vals = []
+        for r_idx, row in enumerate(rows_generator, start=1):
+            if r_idx == req.header_row:
+                header_row_vals = row
+                break
         
         wb.close()
 

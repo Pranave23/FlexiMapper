@@ -193,24 +193,30 @@ if source_file and target_file:
         with col_sh4:
             target_header_row = st.number_input("Header Row (Tgt):", min_value=1, value=1, key="tgt_header_row")
 
-        # Read column headers from user-specified rows robustly
-        wb_src = load_workbook(source_file, data_only=True)
+        # Read column headers from user-specified rows robustly and fast
+        wb_src = load_workbook(source_file, read_only=True)
         ws_src = wb_src[src_sheet_selected]
-        src_row_gen = ws_src.iter_rows(min_row=int(source_header_row), max_row=int(source_header_row), values_only=True)
-        try:
-            src_first_row = next(src_row_gen)
-        except StopIteration:
-            src_first_row = []
+        ws_src._max_row = None
+        ws_src._max_column = None
+        src_row_gen = ws_src.iter_rows(values_only=True)
+        src_first_row = []
+        for r_idx, row in enumerate(src_row_gen, start=1):
+            if r_idx == int(source_header_row):
+                src_first_row = row
+                break
         wb_src.close()
         source_file.seek(0)
 
-        wb_tgt = load_workbook(target_file, data_only=True)
+        wb_tgt = load_workbook(target_file, read_only=True)
         ws_tgt = wb_tgt[tgt_sheet_selected]
-        tgt_row_gen = ws_tgt.iter_rows(min_row=int(target_header_row), max_row=int(target_header_row), values_only=True)
-        try:
-            tgt_first_row = next(tgt_row_gen)
-        except StopIteration:
-            tgt_first_row = []
+        ws_tgt._max_row = None
+        ws_tgt._max_column = None
+        tgt_row_gen = ws_tgt.iter_rows(values_only=True)
+        tgt_first_row = []
+        for r_idx, row in enumerate(tgt_row_gen, start=1):
+            if r_idx == int(target_header_row):
+                tgt_first_row = row
+                break
         wb_tgt.close()
         target_file.seek(0)
 
