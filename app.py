@@ -2,6 +2,7 @@ import os
 import uuid
 import datetime
 import shutil
+import json
 from copy import copy
 from typing import Dict, List, Optional
 from pydantic import BaseModel
@@ -128,6 +129,43 @@ class MergeRequest(BaseModel):
     merge_mode: str  # "fill" or "append"
     source_header_row: int = 1
     target_header_row: int = 1
+
+class SaveMappingsRequest(BaseModel):
+    mappings: Dict[str, Optional[str]]
+
+MAPPINGS_FILE_PATH = os.path.join(BASE_DIR, "saved_mappings.json")
+
+def load_backend_mappings() -> dict:
+    if os.path.exists(MAPPINGS_FILE_PATH):
+        try:
+            with open(MAPPINGS_FILE_PATH, "r") as f:
+                return json.load(f)
+        except Exception:
+            return {}
+    return {}
+
+def save_backend_mappings(mappings: dict):
+    try:
+        with open(MAPPINGS_FILE_PATH, "w") as f:
+            json.dump(mappings, f, indent=4)
+    except Exception:
+        pass
+
+@app.get("/mappings")
+async def get_mappings():
+    return load_backend_mappings()
+
+@app.post("/mappings")
+async def save_mappings(req: SaveMappingsRequest):
+    current = load_backend_mappings()
+    for src_col, tgt_col in req.mappings.items():
+        if tgt_col:
+            current[src_col] = tgt_col
+        else:
+            if src_col in current:
+                del current[src_col]
+    save_backend_mappings(current)
+    return {"status": "success"}
 
 # Route to serve the frontend single page app
 @app.get("/", response_class=HTMLResponse)

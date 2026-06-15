@@ -18,7 +18,8 @@ let state = {
         headerRow: 1,
         columns: []
     },
-    mergeMode: 'fill' // 'fill' or 'append'
+    mergeMode: 'fill', // 'fill' or 'append'
+    historyMappings: {}
 };
 
 // UI Selectors
@@ -312,6 +313,14 @@ async function fetchColumns(type) {
 
         // If columns for both source and target are retrieved, render mapping table
         if (state.source.columns.length > 0 && state.target.columns.length > 0) {
+            try {
+                const mapRes = await fetch('/mappings');
+                if (mapRes.ok) {
+                    state.historyMappings = await mapRes.json();
+                }
+            } catch (e) {
+                console.error("Failed to fetch mappings from backend", e);
+            }
             renderMappingTable();
         }
 
@@ -352,20 +361,44 @@ function updateRowStatus(selectEl) {
     }
 }
 
-// Load stored mappings from localStorage
+// Load stored mappings from localStorage and API cache
 function getStoredMappings() {
+    let mappings = {};
+    // Fallback: load from localStorage
     try {
         const stored = localStorage.getItem('fleximapper_history_mappings');
-        return stored ? JSON.parse(stored) : {};
+        if (stored) {
+            mappings = JSON.parse(stored);
+        }
     } catch (e) {
-        return {};
+        // Ignore localStorage error (e.g. security block in iframes)
     }
+    // Overlay/merge backend-fetched mappings
+    if (state.historyMappings) {
+        mappings = { ...mappings, ...state.historyMappings };
+    }
+    return mappings;
 }
 
-// Save stored mappings to localStorage
+// Save stored mappings to localStorage and backend API
 function saveMapping(sourceCol, targetCol) {
+    // Save to local state cache immediately
+    if (!state.historyMappings) {
+        state.historyMappings = {};
+    }
+    if (targetCol) {
+        state.historyMappings[sourceCol] = targetCol;
+    } else {
+        delete state.historyMappings[sourceCol];
+    }
+
+    // Try to save to localStorage (client-side fallback)
     try {
-        const mappings = getStoredMappings();
+        const mappings = {};
+        const stored = localStorage.getItem('fleximapper_history_mappings');
+        if (stored) {
+            Object.assign(mappings, JSON.parse(stored));
+        }
         if (targetCol) {
             mappings[sourceCol] = targetCol;
         } else {
@@ -373,8 +406,17 @@ function saveMapping(sourceCol, targetCol) {
         }
         localStorage.setItem('fleximapper_history_mappings', JSON.stringify(mappings));
     } catch (e) {
-        console.error(e);
+        // Ignore localStorage error (e.g. security block in iframes)
     }
+
+    // Save to backend API asynchronously (non-blocking)
+    fetch('/mappings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            mappings: { [sourceCol]: targetCol || null }
+        })
+    }).catch(err => console.error("Failed to save mapping to backend", err));
 }
 
 // Render dynamic mapping table
