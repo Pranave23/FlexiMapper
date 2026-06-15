@@ -62,7 +62,7 @@ const radioFillDot = document.getElementById('radio-fill-dot');
 const radioAppendDot = document.getElementById('radio-append-dot');
 
 let mergedBlobUrl = null;
-let downloadFilename = "FlexiMapper_Output.xlsx";
+let downloadFilename = "Output_updated.xlsx";
 
 // Initialize Lucide Icons
 document.addEventListener('DOMContentLoaded', () => {
@@ -352,6 +352,31 @@ function updateRowStatus(selectEl) {
     }
 }
 
+// Load stored mappings from localStorage
+function getStoredMappings() {
+    try {
+        const stored = localStorage.getItem('fleximapper_history_mappings');
+        return stored ? JSON.parse(stored) : {};
+    } catch (e) {
+        return {};
+    }
+}
+
+// Save stored mappings to localStorage
+function saveMapping(sourceCol, targetCol) {
+    try {
+        const mappings = getStoredMappings();
+        if (targetCol) {
+            mappings[sourceCol] = targetCol;
+        } else {
+            delete mappings[sourceCol];
+        }
+        localStorage.setItem('fleximapper_history_mappings', JSON.stringify(mappings));
+    } catch (e) {
+        console.error(e);
+    }
+}
+
 // Render dynamic mapping table
 function renderMappingTable() {
     mappingTableBody.innerHTML = '';
@@ -399,6 +424,15 @@ function renderMappingTable() {
             }
         }
 
+        // If no exact match, try matching from stored mappings history
+        if (!matchedTarget) {
+            const storedMappings = getStoredMappings();
+            const storedTarget = storedMappings[sourceCol];
+            if (storedTarget && targetCols.includes(storedTarget)) {
+                matchedTarget = storedTarget;
+            }
+        }
+
         // Add target options
         targetCols.forEach(targetCol => {
             const opt = document.createElement('option');
@@ -429,6 +463,7 @@ function renderMappingTable() {
         // Dynamic change listener
         select.addEventListener('change', () => {
             updateRowStatus(select);
+            saveMapping(sourceCol, select.value);
             lucide.createIcons();
         });
     });
@@ -558,6 +593,7 @@ function runSmartMatch() {
             select.value = bestMatch;
             matchCount++;
             updateRowStatus(select);
+            saveMapping(sourceCol, bestMatch);
         }
     });
 
@@ -635,7 +671,15 @@ async function processAndMerge() {
                 downloadFilename = matches[1];
             }
         } else {
-            downloadFilename = `FlexiMapper_${state.target.file.name}`;
+            const originalName = state.target.file.name;
+            const dotIndex = originalName.lastIndexOf('.');
+            if (dotIndex !== -1) {
+                const base = originalName.substring(0, dotIndex);
+                const ext = originalName.substring(dotIndex);
+                downloadFilename = `${base}_updated${ext}`;
+            } else {
+                downloadFilename = `${originalName}_updated`;
+            }
         }
 
         // Read binary Excel blob response

@@ -368,7 +368,8 @@ async def merge_data(req: MergeRequest, background_tasks: BackgroundTasks):
 
     # Return the file stream
     original_target_name = req.target_id.split(f"target_{req.target_id.split('_')[1]}_")[-1]
-    download_name = f"FlexiMapper_{original_target_name}"
+    base, ext = os.path.splitext(original_target_name)
+    download_name = f"{base}_updated{ext}"
     
     return FileResponse(
         path=output_path,

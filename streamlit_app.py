@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 import pandas as pd
 from openpyxl import load_workbook
@@ -119,6 +120,35 @@ def clean_and_convert(val, target_cell):
         pass
 
     return val_str
+
+import json
+
+MAPPINGS_FILE = os.path.expanduser("~/.fleximapper_mappings.json")
+
+def load_stored_mappings():
+    if os.path.exists(MAPPINGS_FILE):
+        try:
+            with open(MAPPINGS_FILE, "r") as f:
+                return json.load(f)
+        except Exception:
+            return {}
+    return {}
+
+def save_stored_mapping(source_col, target_col):
+    try:
+        mappings = load_stored_mappings()
+        if target_col and target_col != "— Skip —":
+            mappings[source_col] = target_col
+        else:
+            if source_col in mappings:
+                del mappings[source_col]
+        
+        # Ensure parent directory exists
+        os.makedirs(os.path.dirname(MAPPINGS_FILE), exist_ok=True)
+        with open(MAPPINGS_FILE, "w") as f:
+            json.dump(mappings, f, indent=4)
+    except Exception:
+        pass
 
 # String similarity utility for smart match
 def clean_string(s):
@@ -253,6 +283,8 @@ if source_file and target_file:
                         best_match = tgt_col
                 if highest_score >= 0.6:
                     st.session_state.mappings[src_col] = best_match
+                    st.session_state[f"select_{src_col}"] = best_match
+                    save_stored_mapping(src_col, best_match)
                 else:
                     st.session_state.mappings[src_col] = "— Skip —"
         
@@ -261,13 +293,25 @@ if source_file and target_file:
         if 'last_sheet_key' not in st.session_state or st.session_state.last_sheet_key != current_sheet_key:
             st.session_state.last_sheet_key = current_sheet_key
             st.session_state.mappings = {}
-            # Initialize exact case-insensitive matches
+            # Clear old select keys from session state so selectbox resets to default index
+            for key in list(st.session_state.keys()):
+                if key.startswith("select_"):
+                    del st.session_state[key]
+            
+            stored_mappings = load_stored_mappings()
+            # Initialize exact case-insensitive matches or stored matches
             for src_col in source_columns:
                 src_clean = src_col.strip().lower()
+                matched = False
                 for tgt_col in target_columns:
                     if tgt_col.strip().lower() == src_clean:
                         st.session_state.mappings[src_col] = tgt_col
+                        matched = True
                         break
+                if not matched:
+                    stored_tgt = stored_mappings.get(src_col)
+                    if stored_tgt and stored_tgt in target_columns:
+                        st.session_state.mappings[src_col] = stored_tgt
 
         # Render mapping grid (Source LHS, Target RHS)
         mappings = {}
@@ -308,11 +352,19 @@ if source_file and target_file:
                     key=select_key,
                     label_visibility="collapsed"
                 )
+                
+                # Update local mappings dict for the current run
                 if selected_val != "— Skip —":
                     mappings[src_col] = selected_val
+                
+                # Save only if it changed from what's stored in session state mappings
+                previous_val = st.session_state.mappings.get(src_col, "— Skip —")
+                if selected_val != previous_val:
                     st.session_state.mappings[src_col] = selected_val
-                else:
-                    st.session_state.mappings[src_col] = "— Skip —"
+                    if selected_val != "— Skip —":
+                        save_stored_mapping(src_col, selected_val)
+                    else:
+                        save_stored_mapping(src_col, None)
 
         # STEP 3: Options & Execution
         st.markdown("<h3 class='section-header'>3. Merge Options</h3>", unsafe_allow_html=True)
@@ -418,10 +470,11 @@ if source_file and target_file:
                         st.success("Successfully Merged Sheet Data!")
                         
                         # Download Button
+                        base_name, extension = os.path.splitext(target_file.name)
                         st.download_button(
                             label="Download Merged Excel File",
                             data=output_buffer,
-                            file_name=f"FlexiMapper_{target_file.name}",
+                            file_name=f"{base_name}_updated{extension}",
                             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                         )
 
